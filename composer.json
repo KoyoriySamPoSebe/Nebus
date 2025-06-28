@@ -1,5 +1,4 @@
 {
-    "$schema": "https://getcomposer.org/schema.json",
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
@@ -7,11 +6,17 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "clickbar/laravel-magellan": "^2.0",
         "laravel/framework": "^12.0",
-        "laravel/tinker": "^2.10.1"
+        "laravel/tinker": "^2.10.1",
+        "propaganistas/laravel-phone": "^6.0",
+        "staudenmeir/laravel-adjacency-list": "^1.25",
+        "staudenmeir/laravel-cte": "^1.12",
+        "zircote/swagger-php": "^5.1"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "friendsofphp/php-cs-fixer": "^3.75",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.13",
         "laravel/sail": "^1.41",
@@ -54,14 +59,21 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@php artisan test"
+        ],
+        "openapi:generate": [
+            "sh -c 'export OPENAPI_DONT_USE_GIT=1 && php vendor/bin/openapi app --format yaml --output openapi.yaml'"
         ]
     },
+
     "extra": {
         "laravel": {
             "dont-discover": []
         }
     },
     "config": {
+        "git": {
+            "safe-directory": "/var/www/html"
+        },
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
