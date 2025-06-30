@@ -1,38 +1,28 @@
-# Используем официальный PHP 8.3 FPM образ
-FROM php:8.3-fpm
+FROM php:8.3-fpm AS base
+WORKDIR /var/www/html
+ENV COMPOSER_ALLOW_SUPERUSER=1
 
-# Устанавливаем необходимые пакеты
-RUN apt-get update && apt-get install -y \
-    gnupg \
-    curl \
-    ca-certificates \
-    zip \
-    unzip \
-    git \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
-    libxml2-dev \
-    libpq-dev \
-    zlib1g-dev \
-    nginx \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_pgsql \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update \
+ && apt-get install -y git libpq-dev libzip-dev zip unzip \
+ && docker-php-ext-install pdo_pgsql zip \
+ && pecl install apcu \
+ && docker-php-ext-enable apcu \
+ && rm -rf /var/lib/apt/lists/* \
+ && git config --system --add safe.directory /var/www/html
 
-# Копируем конфигурацию Nginx в контейнер
-COPY ./nginx/default.conf /etc/nginx/sites-available/default
+FROM composer:latest AS composer-bin
+FROM base AS final
 
-# Копируем файлы проекта в контейнер
-COPY . /var/www/html
+COPY --from=composer-bin /usr/bin/composer /usr/bin/composer
+COPY . .
 
-# Устанавливаем права для каталога проекта
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 /var/www/html
 
-# Открываем порты для Nginx и PHP
-EXPOSE 80
+RUN composer install --no-interaction --optimize-autoloader \
+ && php artisan package:discover \
+ && chmod -R 775 storage bootstrap/cache public \
+ && php vendor/bin/openapi app --format yaml --output public/openapi.yaml
 
-# Запуск Nginx и PHP-FPM
-CMD service nginx start && php-fpm
+EXPOSE 9000
+CMD ["php-fpm"]
+
+
